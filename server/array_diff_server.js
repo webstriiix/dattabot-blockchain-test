@@ -1,10 +1,15 @@
 // Express server exposing /array-diff POST endpoint
 // Accepts JSON { a: [...], b: [...] } and query param impl=map|set to choose implementation
-const express = require('express');
-const bodyParser = require('body-parser');
-const { arrayDiffMap, arrayDiffSet } = require('../2_array_diff_function');
+import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { arrayDiffMap, arrayDiffSet } from '../2_array_diff_function.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 
 app.post('/array-diff', (req, res) => {
   const a = req.body.a || [];
@@ -20,8 +25,9 @@ app.post('/array-diff', (req, res) => {
   }
 });
 
-const port = process.env.PORT || 3000;
-if (require.main === module) {
+const port = process.env.PORT || 8080;
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   app.listen(port, () => console.log(`array-diff server listening ${port}`));
 }
-module.exports = app;
+
+export default app;
