@@ -1,48 +1,36 @@
-// Deployment script for Bereitstellen contract using ethers.js and solc
-// Requires environment variables: RPC_URL, PRIVATE_KEY
+// scripts/deploy_bereitstellen.js
+// Deploy Bereitstellen using Hardhat runtime (ESM)
+import dotenv from 'dotenv';
+dotenv.config();
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import hre from 'hardhat';
 
-const fs = require('fs');
-const solc = require('solc');
-const { ethers } = require('ethers');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-async function main() {
-  const rpc = process.env.RPC_URL;
-  const pk = process.env.PRIVATE_KEY;
-  if (!rpc || !pk) {
-    console.error('RPC_URL and PRIVATE_KEY environment variables are required to deploy');
+export default async function main() {
+  try {
+    const [deployer] = await hre.ethers.getSigners();
+    console.log('Deployer address:', deployer.address);
+    const factory = await hre.ethers.getContractFactory('Bereitstellen');
+    const deployTx = factory.getDeployTransaction();
+    const estimate = await hre.ethers.provider.estimateGas(deployTx);
+    console.log('Gas estimate (wei):', estimate.toString());
+
+    console.log('Deploying contract...');
+    const contract = await factory.deploy();
+    await contract.deploymentTransaction().wait();
+    const address = contract.target || contract.address || contract.deployTransaction?.contractAddress;
+    console.log('Deployed at:', address);
+    console.log('Default color:', await contract.color());
+    // Export address instruction
+    console.log('\nAfter deployment, add CONTRACT_ADDRESS to your .env or use it for verification.');
+  } catch (err) {
+    console.error('Deployment failed:', err.message || err);
     process.exit(1);
   }
-  const source = fs.readFileSync('contracts/Bereitstellen.sol', 'utf8');
-  const input = {
-    language: 'Solidity',
-    sources: { 'Bereitstellen.sol': { content: source } },
-    settings: { outputSelection: { '*': { '*': ['abi', 'evm.bytecode'] } } }
-  };
-  const output = JSON.parse(solc.compile(JSON.stringify(input)));
-  if (output.errors) {
-    for (const e of output.errors) {
-      console.error(e.formattedMessage);
-    }
-    if (output.errors.some(e => e.severity === 'error')) process.exit(1);
-  }
-  const contractFile = output.contracts['Bereitstellen.sol']['Bereitstellen'];
-  const abi = contractFile.abi;
-  const bytecode = contractFile.evm.bytecode.object;
-
-  const provider = new ethers.JsonRpcProvider(rpc);
-  const wallet = new ethers.Wallet(pk, provider);
-  const factory = new ethers.ContractFactory(abi, bytecode, wallet);
-  console.log('Estimating gas for deployment...');
-  const deployTx = await factory.getDeployTransaction();
-  const estimate = await provider.estimateGas({ ...deployTx, from: wallet.address });
-  console.log('Gas estimate (wei):', estimate.toString());
-
-  console.log('Deploying contract...');
-  const contract = await factory.deploy();
-  await contract.waitForDeployment();
-  console.log('Deployed at:', contract.target);
-  console.log('Use scripts/interact_bereitstellen.js to call setColor');
 }
 
-if (require.main === module) main();
-module.exports = { };
+if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+

@@ -1,32 +1,35 @@
-// Script to call setColor on deployed contract. Requires RPC_URL, PRIVATE_KEY, CONTRACT_ADDRESS, NEW_COLOR
-const { ethers } = require('ethers');
-const fs = require('fs');
+// scripts/interact_bereitstellen.js
+import dotenv from 'dotenv';
+dotenv.config();
+import { fileURLToPath } from 'url';
+import hre from 'hardhat';
 
-async function main() {
-  const rpc = process.env.RPC_URL;
-  const pk = process.env.PRIVATE_KEY;
-  const contractAddress = process.env.CONTRACT_ADDRESS;
-  const newColor = process.env.NEW_COLOR || 'blue';
-  if (!rpc || !pk || !contractAddress) {
-    console.error('RPC_URL, PRIVATE_KEY, CONTRACT_ADDRESS required');
-    process.exit(1);
-  }
-  const abi = [
-    'function setColor(string memory _yourNewColor) public',
-    'function color() view returns (string)',
-    'event ColorChanged(address indexed by, string color)'
-  ];
-  const provider = new ethers.JsonRpcProvider(rpc);
-  const wallet = new ethers.Wallet(pk, provider);
-  const contract = new ethers.Contract(contractAddress, abi, wallet);
+const __filename = fileURLToPath(import.meta.url);
+
+export default async function main() {
   try {
-    const tx = await contract.setColor(newColor);
-    await tx.wait();
-    console.log('Color changed to', newColor);
+    const contractAddress = process.env.CONTRACT_ADDRESS;
+    const newColor = process.env.NEW_COLOR || 'blue';
+    if (!contractAddress) throw new Error('CONTRACT_ADDRESS required in env');
+    const contract = await hre.ethers.getContractAt('Bereitstellen', contractAddress);
+    const signer = (await hre.ethers.getSigners())[0];
+    console.log('Caller address:', signer.address);
+    const before = await contract.color();
+    console.log('Color before:', before);
+    try {
+      const tx = await contract.connect(signer).setColor(newColor);
+      const receipt = await tx.wait();
+      console.log('Transaction mined. Gas used:', receipt.gasUsed.toString());
+      const after = await contract.color();
+      console.log('Color after:', after);
+    } catch (err) {
+      console.error('setColor reverted:', err.reason || err.message || err);
+    }
   } catch (err) {
-    console.error('Call failed:', err.reason || err.message || err);
+    console.error('Interaction failed:', err.message || err);
+    process.exit(1);
   }
 }
 
-if (require.main === module) main();
-module.exports = { };
+if (process.argv[1] === fileURLToPath(import.meta.url)) main();
+
