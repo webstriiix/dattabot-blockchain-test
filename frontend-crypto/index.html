@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Crypto -> IDR Converter</title>
+    <style>
+      body{font-family:system-ui,Segoe UI,Roboto,Arial;background:#fafafa;padding:2rem}
+      .card{max-width:520px;margin:0 auto;background:#fff;padding:1rem;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+      label{display:block;margin-top:0.5rem}
+      input,select{width:100%;padding:0.5rem;margin-top:0.25rem}
+      button{margin-top:0.75rem;padding:0.5rem 1rem}
+      pre{background:#f4f4f4;padding:0.75rem;border-radius:6px}
+      .meta{color:#666;font-size:0.9rem}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Crypto → IDR Converter</h2>
+      <p>Enter a crypto symbol and amount to convert to Indonesian Rupiah (IDR).</p>
+      <label>Symbol</label>
+      <select id="symbol">
+        <option value="BTC">BTC</option>
+        <option value="ETH" selected>ETH</option>
+        <option value="DOGE">DOGE</option>
+      </select>
+      <label>Amount</label>
+      <input id="amount" type="number" value="1" />
+      <button id="convert">Convert</button>
+      <p id="status" class="meta">Status: idle</p>
+      <p id="cacheInfo" class="meta">Cache: unknown</p>
+      <h3>Result</h3>
+      <pre id="result">-</pre>
+      <p style="margin-top:1rem;color:#444;font-size:0.9rem">Notes: Uses CoinGecko for crypto->USD and open.er-api.com for USD->IDR. Rates are cached for 1 minute on the server.</p>
+    </div>
+
+    <script>
+      const $ = id => document.getElementById(id);
+      const base = '';
+      async function convert(){
+        const sym = $('symbol').value.trim();
+        const amt = $('amount').value;
+        $('status').textContent = 'Converting...';
+        $('cacheInfo').textContent = 'Cache: checking...';
+        try{
+          const res = await fetch(`${base}/convert?symbol=${encodeURIComponent(sym)}&amount=${encodeURIComponent(amt)}`);
+          const j = await res.json();
+          if(!res.ok) throw new Error(j.error||JSON.stringify(j));
+          const cachedCrypto = j.cachedCrypto ? 'crypto rate (CoinGecko) cached' : 'crypto rate fetched';
+          const cachedUsd = j.cachedUsd ? 'USD->IDR cached' : 'USD->IDR fetched';
+          $('result').textContent = JSON.stringify(j, null, 2);
+          $('status').textContent = 'OK';
+          $('cacheInfo').textContent = `Cache: ${cachedCrypto}; ${cachedUsd}`;
+        }catch(err){
+          $('result').textContent = 'Error: '+(err.message||err);
+          $('status').textContent = 'Failed';
+          $('cacheInfo').textContent = 'Cache: unknown';
+        }
+      }
+      $('convert').addEventListener('click', convert);
+    </script>
+  </body>
+</html>
