@@ -13,7 +13,7 @@ Run tests:
 
 Starting the server (array-diff API):
   npm start
-  The server runs on PORT (default 3000). POST /array-diff accepts JSON { a: [...], b: [...] } and query impl=map|set.
+  The server runs on PORT (default 8080). POST /array-diff accepts JSON { a: [...], b: [...] } and query impl=map|set.
 
 Deployment (smart contract - Bereitstellen):
 How to Deploy (step-by-step):
