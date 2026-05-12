@@ -79,4 +79,3 @@ Crypto UI (Question 3)
 - Env (optional): COINGECKO_HOST, COINGECKO_API_KEY, OPEN_ER_HOST, OPEN_ER_API_KEY to override hosts/keys
 - Frontend file: frontend-crypto/index.html (static UI served by the crypto server)
 
-If you'd like, I can open a PR with this README addition or also add a short example curl command to the README.
